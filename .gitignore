@@ -1,0 +1,39 @@
+# Environment & secrets — never commit real keys
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+
+# Local databases & app data
+*.db
+*.sqlite3
+uploads/
+chroma_data/
+pgdata/
+
+# Node
+node_modules/
+dist/
+build/
+
+# Claude Code / AI tooling local state
+.claude/
+
+# Logs & temp
+*.log
+*.tmp
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

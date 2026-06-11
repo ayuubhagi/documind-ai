@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+uploads/
+chroma_data/
+test.db
+tests/
+.pytest_cache/
+.ruff_cache/

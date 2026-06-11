@@ -1,0 +1,68 @@
+# Production deployment: docker compose -f docker-compose.prod.yml up -d --build
+# Requires DOMAIN, ANTHROPIC_API_KEY, SECRET_KEY, POSTGRES_PASSWORD in .env.
+# Caddy terminates TLS (automatic Let's Encrypt certificates) and is the only
+# service exposed to the internet.
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+      - backend
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: documind
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d documind"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg2://postgres:${POSTGRES_PASSWORD}@db:5432/documind
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:?set ANTHROPIC_API_KEY in .env}
+      SECRET_KEY: ${SECRET_KEY:?set SECRET_KEY in .env}
+      UPLOAD_DIR: /app/uploads
+      CHROMA_PERSIST_DIR: /app/chroma_data
+      CORS_ORIGINS: https://${DOMAIN}
+    volumes:
+      - uploads:/app/uploads
+      - chroma:/app/chroma_data
+    depends_on:
+      db:
+        condition: service_healthy
+    # No published ports — only reachable through Caddy.
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    # No published ports — only reachable through Caddy.
+
+volumes:
+  pgdata:
+  uploads:
+  chroma:
+  caddy_data:
+  caddy_config:
