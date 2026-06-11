@@ -1,10 +1,18 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
   backend:
-    name: Backend — lint & test
+    name: Backend - lint and test
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: backend
-
     steps:
       - uses: actions/checkout@v4
 
@@ -17,8 +25,40 @@
       - name: Install dependencies
         run: pip install -r requirements-dev.txt
 
-      - name: Lint (ruff)
+      - name: Lint with ruff
         run: ruff check app tests
 
-      - name: Test (pytest)
+      - name: Test with pytest
         run: PYTHONPATH=. pytest -v
+
+  frontend:
+    name: Frontend - typecheck and build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Typecheck and build
+        run: npm run build
+
+  docker:
+    name: Docker - build images
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build backend image
+        run: docker build -t documind-backend ./backend
+
+      - name: Build frontend image
+        run: docker build -t documind-frontend ./frontend
