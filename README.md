@@ -4,6 +4,8 @@
 
 > Full-stack AI engineering project: React · FastAPI · PostgreSQL · ChromaDB · pluggable LLM backends (demo / Groq / Anthropic Claude) · Docker · GitHub Actions
 
+**[Live demo → documind-ai-hazel-theta.vercel.app](https://documind-ai-hazel-theta.vercel.app)** — free-tier hosting, so the first request after idle takes ~1 minute to wake the backend; demo data resets periodically.
+
 **Runs with zero API keys and zero cost out of the box** — the default `demo` provider streams canned responses through the real RAG pipeline, so you can clone, `docker compose up`, and try everything without creating an account anywhere.
 
 ---
