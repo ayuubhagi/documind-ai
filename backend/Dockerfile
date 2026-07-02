@@ -27,4 +27,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=20s \
 
 # Apply pending migrations, then serve. Alembic owns the Postgres schema;
 # the app no longer calls create_all outside of the SQLite test suite.
-CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

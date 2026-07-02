@@ -80,6 +80,16 @@ Uploaded files and the vector index live in the `uploads` and `chroma` volumes; 
 - [ ] If using a paid provider: spend limit set in its console, or use `LLM_PROVIDER=groq` (free tier) / `demo` (no API at all)
 - [ ] Rate limits are active by default (login, register, upload, chat) — they cap worst-case API spend per account
 
+## Free hosting (Render backend + Vercel frontend)
+
+A zero-cost live demo, no credit card anywhere:
+
+1. **Backend on Render (free tier):** sign in at [render.com](https://render.com) with GitHub → **New → Blueprint** → select this repo. `render.yaml` provisions everything: demo LLM provider (no AI spend possible), SQLite on ephemeral disk (demo data resets on restart — a feature for a public demo), generated `SECRET_KEY`. Note the service URL, e.g. `https://documind-backend.onrender.com`.
+2. **Frontend on Vercel:** import the repo, set **Root Directory** to `frontend`, and add env var `VITE_API_URL=https://<your-render-url>`. Redeploy.
+3. If your Vercel domain differs from the one in `render.yaml`, update `CORS_ORIGINS` in the Render dashboard.
+
+Free-tier caveats: the backend sleeps after 15 idle minutes (first request takes ~1 min to wake) and all data is ephemeral. For always-on with persistent Postgres, use the VPS path above.
+
 ## Alternative: managed platforms
 
 If you'd rather not run a VPS, the two Dockerfiles deploy directly to **Railway**, **Render**, or **Fly.io**: create a Postgres add-on, set the same environment variables, deploy `backend/` and `frontend/` as two services, and route `/api` to the backend. Note ChromaDB and uploads need a persistent disk attached to the backend service.

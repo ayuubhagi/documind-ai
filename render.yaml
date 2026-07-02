@@ -1,0 +1,32 @@
+# Render Blueprint: free-tier backend deployment (render.com -> New -> Blueprint).
+#
+# Free instance notes:
+# - No credit card required; the service sleeps after 15 min idle and wakes on
+#   the next request (~1 min cold start).
+# - Disk is ephemeral, so SQLite data (accounts, uploads, vectors) resets on
+#   restart/redeploy — exactly right for a public demo.
+# - LLM_PROVIDER=demo means zero AI spend is possible. Swap in groq + a free
+#   GROQ_API_KEY from the dashboard for real model answers, still at $0.
+
+services:
+  - type: web
+    name: documind-backend
+    runtime: docker
+    rootDir: backend
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        value: sqlite:////tmp/documind.db
+      - key: LLM_PROVIDER
+        value: demo
+      - key: UPLOAD_DIR
+        value: /tmp/uploads
+      - key: CHROMA_PERSIST_DIR
+        value: /tmp/chroma_data
+      - key: CORS_ORIGINS
+        value: https://documind-ai-hazel-theta.vercel.app

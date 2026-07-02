@@ -34,7 +34,11 @@ export function setTokens(access: string | null, refresh: string | null): void {
   else localStorage.removeItem(REFRESH_KEY);
 }
 
-const api = axios.create({ baseURL: "/api" });
+// Same-origin by default (dev proxy / docker nginx); VITE_API_URL points the
+// static frontend at a separately hosted backend (e.g. Vercel -> Render).
+const API_BASE = import.meta.env.VITE_API_URL ?? "";
+
+const api = axios.create({ baseURL: `${API_BASE}/api` });
 
 api.interceptors.request.use((config) => {
   const token = getToken();
@@ -48,7 +52,7 @@ export async function tryRefresh(): Promise<boolean> {
   if (!refresh) return false;
   try {
     // Plain axios: the `api` instance's interceptor would recurse on 401.
-    const res = await axios.post<AuthResponse>("/api/auth/refresh", {
+    const res = await axios.post<AuthResponse>(`${API_BASE}/api/auth/refresh`, {
       refresh_token: refresh,
     });
     setTokens(res.data.access_token, res.data.refresh_token);
@@ -135,7 +139,7 @@ export async function streamMessage(
   onEvent: (event: StreamEvent) => void,
 ): Promise<void> {
   const send = () =>
-    fetch(`/api/conversations/${conversationId}/messages`, {
+    fetch(`${API_BASE}/api/conversations/${conversationId}/messages`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
