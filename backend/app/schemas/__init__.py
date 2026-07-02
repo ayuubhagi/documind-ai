@@ -1,5 +1,5 @@
 from app.schemas.analytics import ActivityPoint, OverviewStats
-from app.schemas.auth import LoginRequest, Token, UserCreate, UserOut
+from app.schemas.auth import LoginRequest, RefreshRequest, Token, UserCreate, UserOut
 from app.schemas.conversation import (
     ConversationCreate,
     ConversationOut,
@@ -17,6 +17,7 @@ __all__ = [
     "MessageCreate",
     "MessageOut",
     "OverviewStats",
+    "RefreshRequest",
     "Token",
     "UserCreate",
     "UserOut",

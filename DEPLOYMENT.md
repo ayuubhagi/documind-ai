@@ -34,9 +34,12 @@ Set in `.env`:
 
 ```env
 DOMAIN=documind.yourdomain.com
-ANTHROPIC_API_KEY=sk-ant-...
 SECRET_KEY=<output of: python3 -c "import secrets; print(secrets.token_hex(32))">
 POSTGRES_PASSWORD=<long random password>
+
+# Optional — omit entirely to run in free demo mode (no AI spend possible)
+LLM_PROVIDER=groq          # or: anthropic
+GROQ_API_KEY=gsk_...
 ```
 
 Then:
@@ -74,7 +77,8 @@ Uploaded files and the vector index live in the `uploads` and `chroma` volumes; 
 - [ ] `.env` is not committed (it's in `.gitignore`)
 - [ ] Only ports 80/443 are exposed — backend and Postgres are internal-only in `docker-compose.prod.yml`
 - [ ] Server firewall (e.g. `ufw allow 80,443/tcp && ufw enable`) and SSH key auth
-- [ ] Anthropic API key has a spend limit set in the Console
+- [ ] If using a paid provider: spend limit set in its console, or use `LLM_PROVIDER=groq` (free tier) / `demo` (no API at all)
+- [ ] Rate limits are active by default (login, register, upload, chat) — they cap worst-case API spend per account
 
 ## Alternative: managed platforms
 

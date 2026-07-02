@@ -24,7 +24,7 @@ export default function Register() {
     setLoading(true);
     try {
       const res = await register(email, fullName, password);
-      setAuth(res.access_token, res.user);
+      setAuth(res);
       navigate("/dashboard");
     } catch (err: unknown) {
       const detail =

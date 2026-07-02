@@ -74,5 +74,9 @@ def search(
     return hits
 
 
-def delete_document(document_id: int) -> None:
-    _get_collection().delete(where={"document_id": document_id})
+def delete_document(document_id: int, user_id: int) -> None:
+    # user_id is redundant with the caller's ownership check, but scoping the
+    # delete costs nothing and protects any future code path that forgets it.
+    _get_collection().delete(
+        where={"$and": [{"document_id": document_id}, {"user_id": user_id}]}
+    )

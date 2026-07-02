@@ -1,5 +1,7 @@
 # Production deployment: docker compose -f docker-compose.prod.yml up -d --build
-# Requires DOMAIN, ANTHROPIC_API_KEY, SECRET_KEY, POSTGRES_PASSWORD in .env.
+# Requires DOMAIN, SECRET_KEY, POSTGRES_PASSWORD in .env. AI is optional:
+# LLM_PROVIDER defaults to demo (no API key, no cost); set groq or anthropic
+# plus the matching key for live model answers.
 # Caddy terminates TLS (automatic Let's Encrypt certificates) and is the only
 # service exposed to the internet.
 
@@ -40,7 +42,11 @@ services:
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql+psycopg2://postgres:${POSTGRES_PASSWORD}@db:5432/documind
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:?set ANTHROPIC_API_KEY in .env}
+      # Fails fast at startup if SECRET_KEY is missing or still the dev default.
+      ENVIRONMENT: production
+      LLM_PROVIDER: ${LLM_PROVIDER:-demo}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       SECRET_KEY: ${SECRET_KEY:?set SECRET_KEY in .env}
       UPLOAD_DIR: /app/uploads
       CHROMA_PERSIST_DIR: /app/chroma_data

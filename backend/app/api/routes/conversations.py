@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
 from app.core.database import get_db
+from app.core.rate_limit import limiter
 from app.models import Conversation, Document, DocumentStatus, Message, User
 from app.schemas import ConversationCreate, ConversationOut, MessageCreate, MessageOut
 from app.services import analytics
@@ -89,13 +90,20 @@ def list_messages(
 
 
 @router.post("/{conversation_id}/messages")
+@limiter.limit("20/minute;200/day")
 def send_message(
+    request: Request,
     conversation_id: int,
     payload: MessageCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> StreamingResponse:
-    """Ask a question and stream the grounded answer back as Server-Sent Events."""
+    """Ask a question and stream the grounded answer back as Server-Sent Events.
+
+    This endpoint is the most tightly rate-limited in the app: each call can
+    trigger a paid LLM request, so per-user minute and day caps bound the worst
+    case an abusive (or runaway) client can spend.
+    """
     conversation = _get_owned_conversation(db, current_user, conversation_id)
     return StreamingResponse(
         answer_question_stream(db, current_user, conversation, payload.content),

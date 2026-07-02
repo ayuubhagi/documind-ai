@@ -17,7 +17,12 @@ services:
     build: ./backend
     environment:
       DATABASE_URL: postgresql+psycopg2://postgres:${POSTGRES_PASSWORD:-postgres}@db:5432/documind
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      ENVIRONMENT: development
+      # demo = canned responses, zero API calls, zero cost. Set to groq or
+      # anthropic (with the matching key below) for real model answers.
+      LLM_PROVIDER: ${LLM_PROVIDER:-demo}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-in-production}
       UPLOAD_DIR: /app/uploads
       CHROMA_PERSIST_DIR: /app/chroma_data

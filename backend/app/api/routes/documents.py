@@ -6,6 +6,7 @@ from fastapi import (
     BackgroundTasks,
     Depends,
     HTTPException,
+    Request,
     UploadFile,
     status,
 )
@@ -15,6 +16,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_current_user
 from app.core.config import settings
 from app.core.database import get_db
+from app.core.rate_limit import limiter
 from app.models import Document, DocumentStatus, User
 from app.schemas import DocumentOut
 from app.services import analytics
@@ -22,6 +24,22 @@ from app.services.ai import vector_store
 from app.services.ai.document_processor import SUPPORTED_EXTENSIONS, process_document
 
 router = APIRouter()
+
+# File signatures ("magic bytes") per extension. Extension checks alone are
+# trivially bypassed by renaming; content sniffing catches that early with a
+# clear error instead of a confusing processing failure later.
+_MAGIC_BYTES = {
+    ".pdf": (b"%PDF-",),
+    ".docx": (b"PK\x03\x04",),  # docx is a zip container
+}
+
+
+def _content_matches_extension(suffix: str, contents: bytes) -> bool:
+    signatures = _MAGIC_BYTES.get(suffix)
+    if signatures is not None:
+        return contents.startswith(signatures)
+    # .txt / .md: no signature — require it to look like text (no NUL bytes).
+    return b"\x00" not in contents[:8192]
 
 
 def _get_owned_document(db: Session, user: User, document_id: int) -> Document:
@@ -32,7 +50,9 @@ def _get_owned_document(db: Session, user: User, document_id: int) -> Document:
 
 
 @router.post("/upload", response_model=DocumentOut, status_code=status.HTTP_201_CREATED)
+@limiter.limit("30/hour")
 def upload_document(
+    request: Request,
     file: UploadFile,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
@@ -54,6 +74,11 @@ def upload_document(
         )
     if not contents:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="File is empty")
+    if not _content_matches_extension(suffix, contents):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File content does not match its extension",
+        )
 
     # Store under a UUID name so user-supplied filenames never touch the filesystem.
     user_dir = Path(settings.UPLOAD_DIR) / f"user_{current_user.id}"
@@ -117,7 +142,7 @@ def delete_document(
 ) -> None:
     document = _get_owned_document(db, current_user, document_id)
 
-    vector_store.delete_document(document.id)
+    vector_store.delete_document(document.id, user_id=current_user.id)
     Path(document.file_path).unlink(missing_ok=True)
 
     analytics.track_event(

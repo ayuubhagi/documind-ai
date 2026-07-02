@@ -19,7 +19,7 @@ export default function Login() {
     setLoading(true);
     try {
       const res = await login(email, password);
-      setAuth(res.access_token, res.user);
+      setAuth(res);
       navigate("/dashboard");
     } catch (err: unknown) {
       const detail =

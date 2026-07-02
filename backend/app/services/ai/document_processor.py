@@ -22,6 +22,19 @@ logger = logging.getLogger(__name__)
 
 SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".txt", ".md"}
 
+GENERIC_ERROR_MESSAGE = (
+    "Failed to process this document. The file may be corrupted or in an unsupported format."
+)
+
+
+class ProcessingError(ValueError):
+    """An error whose message is safe to show to the user.
+
+    Raw exception strings from parsing libraries can leak internals (e.g. server
+    file paths), so only ProcessingError messages reach the API; everything else
+    is logged server-side and replaced with GENERIC_ERROR_MESSAGE.
+    """
+
 
 def extract_text(file_path: str) -> str:
     suffix = Path(file_path).suffix.lower()
@@ -33,7 +46,7 @@ def extract_text(file_path: str) -> str:
         return "\n\n".join(p.text for p in doc.paragraphs if p.text.strip())
     if suffix in {".txt", ".md"}:
         return Path(file_path).read_text(encoding="utf-8", errors="replace")
-    raise ValueError(f"Unsupported file type: {suffix}")
+    raise ProcessingError(f"Unsupported file type: {suffix}")
 
 
 def chunk_text(text: str, chunk_size: int, overlap: int) -> list[str]:
@@ -86,7 +99,7 @@ def process_document(document_id: int) -> None:
         try:
             text = extract_text(document.file_path)
             if not text.strip():
-                raise ValueError("No extractable text found in the document")
+                raise ProcessingError("No extractable text found in the document")
 
             chunks = chunk_text(text, settings.CHUNK_SIZE, settings.CHUNK_OVERLAP)
             vector_store.add_document_chunks(
@@ -111,7 +124,9 @@ def process_document(document_id: int) -> None:
         except Exception as exc:  # noqa: BLE001 — background task must not crash the worker
             logger.exception("Failed to process document %s", document_id)
             document.status = DocumentStatus.FAILED
-            document.error_message = str(exc)[:2000]
+            document.error_message = (
+                str(exc)[:2000] if isinstance(exc, ProcessingError) else GENERIC_ERROR_MESSAGE
+            )
             db.commit()
     finally:
         db.close()
