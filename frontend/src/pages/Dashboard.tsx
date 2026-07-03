@@ -1,15 +1,20 @@
 import { ChangeEvent, useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+import { Link } from "react-router-dom";
+
+import UpgradeCard from "../components/UpgradeCard";
 import {
   createConversation,
   deleteConversation,
   deleteDocument,
+  fetchUsage,
   listConversations,
   listDocuments,
+  openBillingPortal,
   uploadDocument,
 } from "../services/api";
-import type { Conversation, DocumentItem } from "../types";
+import type { Conversation, DocumentItem, UsageSummary } from "../types";
 
 const STATUS_BADGES: Record<DocumentItem["status"], string> = {
   pending: "bg-yellow-500/10 text-yellow-400 border-yellow-500/30",
@@ -32,11 +37,14 @@ export default function Dashboard() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [usage, setUsage] = useState<UsageSummary | null>(null);
+  const [upgradeReason, setUpgradeReason] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     const [docs, convos] = await Promise.all([listDocuments(), listConversations()]);
     setDocuments(docs);
     setConversations(convos.slice(0, 8));
+    fetchUsage().then(setUsage).catch(() => undefined);
   }, []);
 
   useEffect(() => {
@@ -60,9 +68,14 @@ export default function Dashboard() {
       await uploadDocument(file);
       await refresh();
     } catch (err: unknown) {
-      const detail =
-        (err as { response?: { data?: { detail?: string } } }).response?.data?.detail;
-      setError(detail ?? "Upload failed. Please try again.");
+      const response = (err as { response?: { status?: number; data?: { detail?: unknown } } })
+        .response;
+      const detail = response?.data?.detail;
+      if (response?.status === 402 && typeof detail === "object" && detail !== null) {
+        setUpgradeReason((detail as { reason?: string }).reason ?? "Free limit reached.");
+      } else {
+        setError(typeof detail === "string" ? detail : "Upload failed. Please try again.");
+      }
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -117,6 +130,40 @@ export default function Dashboard() {
           />
         </div>
       </div>
+
+      {usage && (
+        <div className="mb-6 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-400">
+          {usage.plan === "pro" ? (
+            <>
+              <span className="inline-block rounded-full border border-brand-500/40 bg-brand-500/10 px-2.5 py-0.5 text-xs font-medium text-brand-400">
+                Pro
+              </span>
+              <button
+                className="text-xs text-slate-500 hover:text-slate-300"
+                onClick={() => void openBillingPortal().catch(() => undefined)}
+              >
+                Manage subscription
+              </button>
+            </>
+          ) : (
+            <>
+              <span>
+                {usage.questions_today}/{usage.question_limit} questions today ·{" "}
+                {usage.documents_used}/{usage.document_limit} document
+              </span>
+              <Link to="/pricing" className="text-xs text-brand-400 hover:underline">
+                Upgrade for unlimited
+              </Link>
+            </>
+          )}
+        </div>
+      )}
+
+      {upgradeReason && (
+        <div className="mb-6">
+          <UpgradeCard reason={upgradeReason} />
+        </div>
+      )}
 
       {error && (
         <div className="mb-6 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">

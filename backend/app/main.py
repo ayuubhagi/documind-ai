@@ -8,12 +8,13 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
 from app import models  # noqa: F401 — ensures all models are registered with Base
-from app.api.routes import analytics, auth, conversations, documents
+from app.api.routes import analytics, auth, billing, conversations, documents, sample
 from app.core.config import DEV_SECRET_KEY, settings
 from app.core.database import Base, SessionLocal, engine
 from app.core.rate_limit import limiter
 from app.models import Document, DocumentStatus
 from app.services.ai.llm import validate_provider_config
+from app.services.sample import seed_sample_document
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -74,6 +75,8 @@ async def lifespan(app: FastAPI):
         # Postgres schemas are managed by Alembic (see Dockerfile / README).
         Base.metadata.create_all(bind=engine)
     _fail_stale_processing_documents()
+    with SessionLocal() as db:
+        seed_sample_document(db)
     yield
 
 
@@ -101,6 +104,8 @@ app.include_router(
     conversations.router, prefix=f"{settings.API_PREFIX}/conversations", tags=["conversations"]
 )
 app.include_router(analytics.router, prefix=f"{settings.API_PREFIX}/analytics", tags=["analytics"])
+app.include_router(billing.router, prefix=f"{settings.API_PREFIX}/billing", tags=["billing"])
+app.include_router(sample.router, prefix=f"{settings.API_PREFIX}/sample", tags=["sample"])
 
 
 @app.get("/health", tags=["health"])

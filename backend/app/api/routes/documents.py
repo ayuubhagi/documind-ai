@@ -19,7 +19,7 @@ from app.core.database import get_db
 from app.core.rate_limit import limiter
 from app.models import Document, DocumentStatus, User
 from app.schemas import DocumentOut
-from app.services import analytics
+from app.services import analytics, usage
 from app.services.ai import vector_store
 from app.services.ai.document_processor import SUPPORTED_EXTENSIONS, process_document
 
@@ -58,6 +58,8 @@ def upload_document(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> Document:
+    usage.ensure_can_upload(db, current_user)
+
     suffix = Path(file.filename or "").suffix.lower()
     if suffix not in SUPPORTED_EXTENSIONS:
         raise HTTPException(

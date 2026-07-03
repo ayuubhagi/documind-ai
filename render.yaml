@@ -30,3 +30,10 @@ services:
         value: /tmp/chroma_data
       - key: CORS_ORIGINS
         value: https://documind-ai-hazel-theta.vercel.app
+      - key: FRONTEND_URL
+        value: https://documind-ai-hazel-theta.vercel.app
+      # Set these in the Render dashboard (never committed):
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false

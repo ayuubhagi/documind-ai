@@ -68,3 +68,24 @@ export type StreamEvent =
   | { type: "token"; content: string }
   | { type: "done"; message_id: number }
   | { type: "error"; detail: string };
+
+export interface BillingConfig {
+  enabled: boolean;
+  pro_price_cents: number;
+  free_document_limit: number;
+  free_questions_per_day: number;
+}
+
+export interface UsageSummary {
+  plan: "free" | "pro";
+  documents_used: number;
+  document_limit: number;
+  questions_today: number;
+  question_limit: number | null;
+}
+
+export interface SampleInfo {
+  filename: string;
+  chunk_count: number;
+  suggested_questions: string[];
+}

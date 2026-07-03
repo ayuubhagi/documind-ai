@@ -7,6 +7,7 @@ import Chat from "./pages/Chat";
 import Dashboard from "./pages/Dashboard";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
+import Pricing from "./pages/Pricing";
 import Register from "./pages/Register";
 import { getToken } from "./services/api";
 import { useAuthStore } from "./store/authStore";
@@ -35,6 +36,7 @@ export default function App() {
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/pricing" element={<Pricing />} />
         <Route element={<ProtectedRoute />}>
           <Route element={<AppLayout />}>
             <Route path="/dashboard" element={<Dashboard />} />

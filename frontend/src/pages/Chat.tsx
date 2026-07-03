@@ -1,7 +1,8 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
-import { getConversation, listMessages, streamMessage } from "../services/api";
+import UpgradeCard from "../components/UpgradeCard";
+import { getConversation, listMessages, streamMessage, UpgradeRequiredError } from "../services/api";
 import type { Conversation, Source } from "../types";
 
 interface ChatMessage {
@@ -47,6 +48,7 @@ export default function Chat() {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [upgradeReason, setUpgradeReason] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -104,11 +106,18 @@ export default function Chat() {
           return next;
         });
       });
-    } catch {
-      setError("Connection lost while streaming the answer. Please try again.");
-      setMessages((prev) =>
-        prev.map((m, i) => (i === prev.length - 1 ? { ...m, streaming: false } : m)),
-      );
+    } catch (err) {
+      // Roll back the optimistic assistant bubble.
+      setMessages((prev) => prev.slice(0, -1));
+      if (err instanceof UpgradeRequiredError) {
+        setUpgradeReason(err.message);
+      } else {
+        setError(
+          err instanceof Error && err.message.includes("too fast")
+            ? err.message
+            : "Connection lost while streaming the answer. Please try again.",
+        );
+      }
     } finally {
       setBusy(false);
     }
@@ -160,6 +169,7 @@ export default function Chat() {
               </div>
             </div>
           ))}
+          {upgradeReason && <UpgradeCard reason={upgradeReason} />}
           <div ref={bottomRef} />
         </div>
       </div>
@@ -171,7 +181,7 @@ export default function Chat() {
             placeholder="Ask a question about your documents…"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            disabled={busy}
+            disabled={busy || Boolean(upgradeReason)}
             maxLength={8000}
           />
           <button type="submit" className="btn-primary" disabled={busy || !input.trim()}>

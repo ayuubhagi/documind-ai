@@ -59,6 +59,41 @@ def _build_history(conversation: Conversation) -> list[dict]:
     return [{"role": m.role, "content": m.content} for m in recent]
 
 
+def answer_oneoff_stream(user_id: int, document_id: int, question: str) -> Iterator[str]:
+    """Stream a grounded answer without persisting anything.
+
+    Used by the anonymous sample-document endpoint: same retrieval + prompt +
+    provider path as real conversations, but stateless.
+    """
+    try:
+        hits = vector_store.search(
+            user_id=user_id, query=question, top_k=settings.RAG_TOP_K, document_id=document_id
+        )
+        sources = [
+            {
+                "ref": i + 1,
+                "document_id": hit["document_id"],
+                "filename": hit["filename"],
+                "chunk_index": hit["chunk_index"],
+                "snippet": hit["text"][:300],
+            }
+            for i, hit in enumerate(hits)
+        ]
+        yield _sse({"type": "sources", "sources": sources})
+
+        system = (
+            SYSTEM_PROMPT_TEMPLATE.format(context=_build_context(hits))
+            if hits
+            else NO_CONTEXT_SYSTEM_PROMPT
+        )
+        for token in llm.stream_chat(system, [{"role": "user", "content": question}], hits=hits):
+            yield _sse({"type": "token", "content": token})
+        yield _sse({"type": "done", "message_id": None})
+    except Exception:  # noqa: BLE001 — surface errors to the client instead of dropping the stream
+        logger.exception("Sample stream failed")
+        yield _sse({"type": "error", "detail": "Failed to generate an answer. Please try again."})
+
+
 def answer_question_stream(
     db: Session, user: User, conversation: Conversation, question: str
 ) -> Iterator[str]:

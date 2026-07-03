@@ -8,7 +8,7 @@ from app.core.database import get_db
 from app.core.rate_limit import limiter
 from app.models import Conversation, Document, DocumentStatus, Message, User
 from app.schemas import ConversationCreate, ConversationOut, MessageCreate, MessageOut
-from app.services import analytics
+from app.services import analytics, usage
 from app.services.ai.rag import answer_question_stream
 
 router = APIRouter()
@@ -105,6 +105,7 @@ def send_message(
     case an abusive (or runaway) client can spend.
     """
     conversation = _get_owned_conversation(db, current_user, conversation_id)
+    usage.ensure_can_ask(db, current_user)
     return StreamingResponse(
         answer_question_stream(db, current_user, conversation, payload.content),
         media_type="text/event-stream",

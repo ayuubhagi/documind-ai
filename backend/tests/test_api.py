@@ -135,3 +135,99 @@ def test_analytics_overview_empty_account() -> None:
         body = response.json()
         assert body["total_documents"] == 0
         assert body["questions_asked"] == 0
+
+
+def _auth_headers(client: TestClient) -> dict:
+    token = client.post("/api/auth/register", json=_register_payload()).json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
+
+
+def test_free_tier_upload_limit_enforced(monkeypatch) -> None:
+    # Second upload on the free plan must 402 server-side, regardless of client.
+    import app.api.routes.documents as documents_module
+
+    monkeypatch.setattr(
+        documents_module, "process_document", lambda document_id: None, raising=True
+    )
+    with TestClient(app) as client:
+        headers = _auth_headers(client)
+        files = {"file": ("notes.txt", b"hello world notes", "text/plain")}
+        assert client.post("/api/documents/upload", files=files, headers=headers).status_code == 201
+        response = client.post("/api/documents/upload", files=files, headers=headers)
+        assert response.status_code == 402
+        assert response.json()["detail"]["code"] == "upgrade_required"
+
+
+def test_free_tier_daily_question_limit_enforced(monkeypatch) -> None:
+    from app.services.ai import rag, vector_store
+
+    monkeypatch.setattr(
+        vector_store, "search", lambda user_id, query, top_k, document_id=None: []
+    )
+    monkeypatch.setattr(rag, "HISTORY_LIMIT", 0)
+    with TestClient(app) as client:
+        headers = _auth_headers(client)
+        conv = client.post("/api/conversations", json={"document_id": None}, headers=headers)
+        conv_id = conv.json()["id"]
+        for i in range(10):
+            response = client.post(
+                f"/api/conversations/{conv_id}/messages",
+                json={"content": f"question {i}"},
+                headers=headers,
+            )
+            assert response.status_code == 200, f"question {i} failed: {response.text}"
+            response.read()  # drain the stream so the user message is persisted
+        response = client.post(
+            f"/api/conversations/{conv_id}/messages",
+            json={"content": "one too many"},
+            headers=headers,
+        )
+        assert response.status_code == 402
+        assert response.json()["detail"]["code"] == "upgrade_required"
+
+
+def test_pro_user_bypasses_limits(monkeypatch) -> None:
+    import app.api.routes.documents as documents_module
+
+    monkeypatch.setattr(
+        documents_module, "process_document", lambda document_id: None, raising=True
+    )
+    with TestClient(app) as client:
+        payload = _register_payload()
+        client.post("/api/auth/register", json=payload)
+
+        # Flip the plan directly in the DB — simulating what the webhook does.
+        from sqlalchemy import select
+
+        from app.core.database import SessionLocal
+        from app.models import User
+
+        with SessionLocal() as db:
+            user = db.scalar(select(User).where(User.email == payload["email"]))
+            user.plan = "pro"
+            db.commit()
+
+        token = client.post(
+            "/api/auth/login", json={"email": payload["email"], "password": payload["password"]}
+        ).json()["access_token"]
+        headers = {"Authorization": f"Bearer {token}"}
+        files = {"file": ("a.txt", b"aaa", "text/plain")}
+        assert client.post("/api/documents/upload", files=files, headers=headers).status_code == 201
+        files = {"file": ("b.txt", b"bbb", "text/plain")}
+        assert client.post("/api/documents/upload", files=files, headers=headers).status_code == 201
+
+
+def test_billing_endpoints_disabled_without_stripe_key() -> None:
+    with TestClient(app) as client:
+        headers = _auth_headers(client)
+        assert client.get("/api/billing/config").json()["enabled"] is False
+        assert client.post("/api/billing/checkout", headers=headers).status_code == 503
+
+
+def test_usage_summary() -> None:
+    with TestClient(app) as client:
+        headers = _auth_headers(client)
+        body = client.get("/api/billing/usage", headers=headers).json()
+        assert body["plan"] == "free"
+        assert body["question_limit"] == 10
+        assert body["documents_used"] == 0

@@ -26,6 +26,18 @@ class Settings(BaseSettings):
     # Rate limiting (disabled in the test suite)
     RATE_LIMIT_ENABLED: bool = True
 
+    # Billing (Stripe). Empty STRIPE_SECRET_KEY disables billing endpoints
+    # gracefully so the app still runs as a free demo without any Stripe setup.
+    STRIPE_SECRET_KEY: str = ""
+    STRIPE_WEBHOOK_SECRET: str = ""
+    PRO_PRICE_CENTS: int = 699
+    FRONTEND_URL: str = "http://localhost:5173"
+
+    # Free-tier limits (enforced server-side)
+    FREE_DOCUMENT_LIMIT: int = 1
+    FREE_QUESTIONS_PER_DAY: int = 10
+    PRO_DOCUMENT_LIMIT: int = 50
+
     # Database
     DATABASE_URL: str = "postgresql+psycopg2://postgres:postgres@localhost:5432/documind"
 

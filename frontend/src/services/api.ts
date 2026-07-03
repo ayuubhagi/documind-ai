@@ -3,13 +3,24 @@ import axios from "axios";
 import type {
   ActivityPoint,
   AuthResponse,
+  BillingConfig,
   Conversation,
   DocumentItem,
   Message,
   OverviewStats,
+  SampleInfo,
   StreamEvent,
+  UsageSummary,
   User,
 } from "../types";
+
+/** Thrown when the server responds 402 — the free-tier limit was hit. */
+export class UpgradeRequiredError extends Error {
+  constructor(reason: string) {
+    super(reason);
+    this.name = "UpgradeRequiredError";
+  }
+}
 
 // Tokens live in localStorage. Tradeoff (documented in the README): storage is
 // XSS-readable, but the API is same-origin behind React's escaping; httpOnly
@@ -123,6 +134,27 @@ export const listMessages = (conversationId: number) =>
 
 export const deleteConversation = (id: number) => api.delete(`/conversations/${id}`);
 
+// ---- Billing ----
+export const fetchBillingConfig = () =>
+  api.get<BillingConfig>("/billing/config").then((r) => r.data);
+
+export const fetchUsage = () => api.get<UsageSummary>("/billing/usage").then((r) => r.data);
+
+/** Starts Stripe Checkout and redirects the browser to the hosted payment page. */
+export const startCheckout = async (): Promise<void> => {
+  const { data } = await api.post<{ checkout_url: string }>("/billing/checkout");
+  window.location.href = data.checkout_url;
+};
+
+/** Opens the Stripe customer portal (cancel / manage payment method). */
+export const openBillingPortal = async (): Promise<void> => {
+  const { data } = await api.post<{ portal_url: string }>("/billing/portal");
+  window.location.href = data.portal_url;
+};
+
+// ---- Sample document (anonymous, pre-signup) ----
+export const fetchSampleInfo = () => api.get<SampleInfo>("/sample").then((r) => r.data);
+
 // ---- Analytics ----
 export const fetchOverview = () =>
   api.get<OverviewStats>("/analytics/overview").then((r) => r.data);
@@ -153,7 +185,33 @@ export async function streamMessage(
   if (response.status === 401 && (await tryRefresh())) {
     response = await send();
   }
+  await readSseStream(response, onEvent);
+}
 
+/** Ask the public sample document a question (no auth). */
+export async function streamSampleMessage(
+  content: string,
+  onEvent: (event: StreamEvent) => void,
+): Promise<void> {
+  const response = await fetch(`${API_BASE}/api/sample/ask`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ content }),
+  });
+  await readSseStream(response, onEvent);
+}
+
+async function readSseStream(
+  response: Response,
+  onEvent: (event: StreamEvent) => void,
+): Promise<void> {
+  if (response.status === 402) {
+    const body = (await response.json()) as { detail?: { reason?: string } };
+    throw new UpgradeRequiredError(body.detail?.reason ?? "Free limit reached.");
+  }
+  if (response.status === 429) {
+    throw new Error("You're asking a little too fast — try again in a minute.");
+  }
   if (!response.ok || !response.body) {
     throw new Error(`Request failed with status ${response.status}`);
   }
