@@ -53,6 +53,10 @@ class Settings(BaseSettings):
     # Storage
     UPLOAD_DIR: str = "./uploads"
     CHROMA_PERSIST_DIR: str = "./chroma_data"
+    # "default" = Chroma's built-in local ONNX model (all-MiniLM-L6-v2).
+    # "hash" = deterministic offline bag-of-words embedding, for tests/CI only:
+    # no model download, no network, stable results.
+    EMBEDDING_PROVIDER: str = "default"
     MAX_UPLOAD_SIZE_MB: int = 20
 
     # RAG tuning

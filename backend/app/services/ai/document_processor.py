@@ -14,7 +14,7 @@ from pypdf import PdfReader
 
 from app.core.config import settings
 from app.core.database import SessionLocal
-from app.models import Document, DocumentStatus
+from app.models import Document, DocumentChunk, DocumentStatus
 from app.services import analytics
 from app.services.ai import vector_store
 
@@ -102,6 +102,17 @@ def process_document(document_id: int) -> None:
                 raise ProcessingError("No extractable text found in the document")
 
             chunks = chunk_text(text, settings.CHUNK_SIZE, settings.CHUNK_OVERLAP)
+
+            # Persist chunk text in the relational DB first: it is the durable
+            # source of truth from which vectors are rebuilt after restarts
+            # (the Chroma index sits on ephemeral disk in production).
+            document.chunks.clear()
+            db.add_all(
+                DocumentChunk(document_id=document.id, chunk_index=i, text=chunk)
+                for i, chunk in enumerate(chunks)
+            )
+            db.flush()
+
             vector_store.add_document_chunks(
                 document_id=document.id,
                 user_id=document.user_id,

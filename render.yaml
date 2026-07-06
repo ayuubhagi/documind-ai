@@ -3,8 +3,10 @@
 # Free instance notes:
 # - No credit card required; the service sleeps after 15 min idle and wakes on
 #   the next request (~1 min cold start).
-# - Disk is ephemeral, so SQLite data (accounts, uploads, vectors) resets on
-#   restart/redeploy — exactly right for a public demo.
+# - Disk is ephemeral. With DATABASE_URL pointing at managed Postgres (free
+#   Neon tier), accounts/plans/chunks persist; the vector index rebuilds
+#   lazily from stored chunks after each restart (see services/ai/reindex.py).
+#   Uploaded source files are not retained after processing.
 # - LLM_PROVIDER=demo means zero AI spend is possible. Swap in groq + a free
 #   GROQ_API_KEY from the dashboard for real model answers, still at $0.
 
@@ -20,8 +22,11 @@ services:
         value: production
       - key: SECRET_KEY
         generateValue: true
+      # Postgres (e.g. free-tier Neon) so accounts, plans, and document
+      # chunks survive restarts. Set in the dashboard, never committed.
+      # Falls back to ephemeral SQLite only if unset.
       - key: DATABASE_URL
-        value: sqlite:////tmp/documind.db
+        sync: false
       - key: LLM_PROVIDER
         value: demo
       - key: UPLOAD_DIR

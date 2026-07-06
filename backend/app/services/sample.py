@@ -9,7 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.security import hash_password
-from app.models import Document, DocumentStatus, User
+from app.models import Document, DocumentChunk, DocumentStatus, User
 from app.services.ai import vector_store
 from app.services.ai.document_processor import chunk_text
 
@@ -81,6 +81,11 @@ def seed_sample_document(db: Session) -> None:
             chunk_count=len(chunks),
         )
         db.add(document)
+        db.flush()
+        db.add_all(
+            DocumentChunk(document_id=document.id, chunk_index=i, text=chunk)
+            for i, chunk in enumerate(chunks)
+        )
         db.flush()
         vector_store.add_document_chunks(
             document_id=document.id,

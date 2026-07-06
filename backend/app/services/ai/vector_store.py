@@ -10,17 +10,48 @@ extra API dependency.
 from functools import lru_cache
 
 import chromadb
+from chromadb import Documents, EmbeddingFunction, Embeddings
 
 from app.core.config import settings
 
 _BATCH_SIZE = 100
 
 
+class _HashEmbeddingFunction(EmbeddingFunction[Documents]):
+    """Deterministic offline embedding for tests/CI (EMBEDDING_PROVIDER=hash).
+
+    Bag-of-words over token hashes, L2-normalized. Not semantically smart, but
+    lexical overlap ranks correctly under cosine distance, needs no model
+    download, and keeps the test suite fully offline.
+    """
+
+    _DIM = 128
+
+    def name(self) -> str:  # chroma>=0.5 identifies embedding functions by name
+        return "documind-hash-test"
+
+    def __call__(self, input: Documents) -> Embeddings:  # noqa: A002 — chroma API name
+        import hashlib
+
+        vectors = []
+        for text in input:
+            vec = [0.0] * self._DIM
+            for token in text.lower().split():
+                digest = int(hashlib.md5(token.encode()).hexdigest(), 16)
+                vec[digest % self._DIM] += 1.0
+            norm = sum(x * x for x in vec) ** 0.5 or 1.0
+            vectors.append([x / norm for x in vec])
+        return vectors
+
+
 @lru_cache
 def _get_collection() -> chromadb.Collection:
     client = chromadb.PersistentClient(path=settings.CHROMA_PERSIST_DIR)
+    kwargs = {}
+    if settings.EMBEDDING_PROVIDER == "hash":
+        kwargs["embedding_function"] = _HashEmbeddingFunction()
     return client.get_or_create_collection(
-        name="documents", metadata={"hnsw:space": "cosine"}
+        name="documents", metadata={"hnsw:space": "cosine"}, **kwargs
     )
 
 
@@ -80,3 +111,9 @@ def delete_document(document_id: int, user_id: int) -> None:
     _get_collection().delete(
         where={"$and": [{"document_id": document_id}, {"user_id": user_id}]}
     )
+
+
+def has_document(document_id: int) -> bool:
+    """True if any vectors exist for this document (cheap: fetches one id)."""
+    result = _get_collection().get(where={"document_id": document_id}, limit=1, include=[])
+    return bool(result.get("ids"))

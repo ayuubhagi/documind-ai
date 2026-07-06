@@ -6,6 +6,7 @@ import uuid
 # Must be set before any app import — settings are read at import time.
 os.environ["DATABASE_URL"] = "sqlite:///./test.db"
 os.environ["LLM_PROVIDER"] = "demo"
+os.environ["EMBEDDING_PROVIDER"] = "hash"  # offline deterministic embeddings
 os.environ["RATE_LIMIT_ENABLED"] = "false"  # tests hammer endpoints far past real limits
 
 from fastapi.testclient import TestClient  # noqa: E402

@@ -84,11 +84,11 @@ Uploaded files and the vector index live in the `uploads` and `chroma` volumes; 
 
 A zero-cost live demo, no credit card anywhere:
 
-1. **Backend on Render (free tier):** sign in at [render.com](https://render.com) with GitHub → **New → Blueprint** → select this repo. `render.yaml` provisions everything: demo LLM provider (no AI spend possible), SQLite on ephemeral disk (demo data resets on restart — a feature for a public demo), generated `SECRET_KEY`. Note the service URL, e.g. `https://documind-backend.onrender.com`.
+1. **Backend on Render (free tier):** sign in at [render.com](https://render.com) with GitHub → **New → Blueprint** → select this repo. `render.yaml` provisions everything: demo LLM provider (no AI spend possible) and a generated `SECRET_KEY`. Set `DATABASE_URL` in the dashboard to a managed Postgres instance (free Neon tier works) so accounts, plans, and document chunks survive restarts; the Chroma vector index lives on ephemeral disk and is rebuilt lazily from stored chunks (`app/services/ai/reindex.py`). Note the service URL, e.g. `https://documind-backend.onrender.com`.
 2. **Frontend on Vercel:** import the repo, set **Root Directory** to `frontend`, and add env var `VITE_API_URL=https://<your-render-url>`. Redeploy.
 3. If your Vercel domain differs from the one in `render.yaml`, update `CORS_ORIGINS` in the Render dashboard.
 
-Free-tier caveats: the backend sleeps after 15 idle minutes (first request takes ~1 min to wake) and all data is ephemeral. For always-on with persistent Postgres, use the VPS path above.
+Free-tier caveats: the backend sleeps after 15 idle minutes (first request takes ~1 min to wake), and the first question after a restart pays a one-time reindexing delay while vectors rebuild. Original uploaded files are not retained after text extraction. For always-on hosting, use the VPS path above.
 
 ## Alternative: managed platforms
 

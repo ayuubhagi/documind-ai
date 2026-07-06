@@ -18,7 +18,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.models import Conversation, Message, User
 from app.services import analytics
-from app.services.ai import llm, vector_store
+from app.services.ai import llm, reindex, vector_store
 
 logger = logging.getLogger(__name__)
 
@@ -66,6 +66,7 @@ def answer_oneoff_stream(user_id: int, document_id: int, question: str) -> Itera
     provider path as real conversations, but stateless.
     """
     try:
+        reindex.ensure_indexed(user_id, document_id)
         hits = vector_store.search(
             user_id=user_id, query=question, top_k=settings.RAG_TOP_K, document_id=document_id
         )
@@ -100,6 +101,8 @@ def answer_question_stream(
     """Stream a grounded answer as SSE frames and persist both sides of the turn."""
     try:
         # 1. Retrieve relevant chunks (scoped to one document, or all of the user's).
+        #    Rebuild any vectors lost to an ephemeral-disk restart first.
+        reindex.ensure_indexed(user.id, conversation.document_id)
         hits = vector_store.search(
             user_id=user.id,
             query=question,
