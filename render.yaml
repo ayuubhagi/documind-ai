@@ -12,7 +12,7 @@
 
 services:
   - type: web
-    name: documind-backend
+    name: documind-ai-hazel-theta
     runtime: docker
     rootDir: backend
     plan: free

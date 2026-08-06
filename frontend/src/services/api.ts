@@ -27,8 +27,8 @@ export class UpgradeRequiredError extends Error {
 // cookies would trade that for CSRF handling. Access tokens expire in 15
 // minutes, so a leaked one has a short life; refresh tokens rotate on use and
 // are revoked server-side on logout.
-const TOKEN_KEY = "documind_token";
-const REFRESH_KEY = "documind_refresh_token";
+const TOKEN_KEY = "docmaid_token";
+const REFRESH_KEY = "docmaid_refresh_token";
 
 export function getToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);

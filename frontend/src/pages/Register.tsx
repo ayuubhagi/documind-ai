@@ -39,7 +39,7 @@ export default function Register() {
     <div className="flex min-h-screen items-center justify-center px-4">
       <div className="card w-full max-w-md">
         <Link to="/" className="font-display text-xl font-bold text-brand-400">
-          DocuMind
+          DocMaid
         </Link>
         <h1 className="mt-4 text-2xl font-semibold">Create your workspace</h1>
         <p className="mt-1 text-sm text-slate-400">

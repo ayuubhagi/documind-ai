@@ -1,4 +1,4 @@
-"""The pre-seeded sample document that lets visitors try DocuMind before
+"""The pre-seeded sample document that lets visitors try DocMaid before
 signing up. Owned by an internal system user so tenant isolation still holds;
 the anonymous endpoint is the only reader."""
 
@@ -15,7 +15,7 @@ from app.services.ai.document_processor import chunk_text
 
 logger = logging.getLogger(__name__)
 
-SYSTEM_EMAIL = "system@documind.internal"
+SYSTEM_EMAIL = "system@docmaid.internal"
 SAMPLE_FILENAME = "sample-lease-agreement.txt"
 
 SUGGESTED_QUESTIONS = [
@@ -63,7 +63,7 @@ def seed_sample_document(db: Session) -> None:
         if user is None:
             user = User(
                 email=SYSTEM_EMAIL,
-                full_name="DocuMind System",
+                full_name="DocMaid System",
                 # Random password, never used for login.
                 hashed_password=hash_password(secrets.token_hex(32)),
             )

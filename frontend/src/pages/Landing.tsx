@@ -125,7 +125,7 @@ export default function Landing() {
     <div className="min-h-screen">
       <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
         <div>
-          <span className="font-display text-2xl font-bold text-brand-400">DocuMind</span>
+          <span className="font-display text-2xl font-bold text-brand-400">DocMaid</span>
           <span className="ml-1 text-xs uppercase tracking-widest text-slate-500">AI</span>
         </div>
         <nav className="flex items-center gap-3">
@@ -159,7 +159,7 @@ export default function Landing() {
           <span className="text-brand-400">Start asking them.</span>
         </h1>
         <p className="mx-auto mt-6 max-w-2xl text-lg text-slate-400">
-          DocuMind turns your contracts, reports, papers, and notes into a knowledge base you can
+          DocMaid turns your contracts, reports, papers, and notes into a knowledge base you can
           chat with — with every answer grounded in, and cited from, your own files.
         </p>
         <div className="mt-8 flex justify-center gap-4">
@@ -183,7 +183,7 @@ export default function Landing() {
       </section>
 
       <footer className="border-t border-slate-800 py-8 text-center text-sm text-slate-500">
-        DocuMind AI — a RAG document intelligence platform. Built with React, FastAPI, PostgreSQL
+        DocMaid AI — a RAG document intelligence platform. Built with React, FastAPI, PostgreSQL
         &amp; ChromaDB.
       </footer>
     </div>

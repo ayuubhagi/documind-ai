@@ -16,7 +16,7 @@ export default function AppLayout() {
     <div className="flex min-h-screen">
       <aside className="flex w-60 flex-col border-r border-slate-800 bg-slate-900/60 p-4">
         <div className="mb-8 px-2">
-          <span className="font-display text-xl font-bold text-brand-400">DocuMind</span>
+          <span className="font-display text-xl font-bold text-brand-400">DocMaid</span>
           <span className="ml-1 text-xs uppercase tracking-widest text-slate-500">AI</span>
         </div>
 

@@ -4,11 +4,11 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: documind
+      POSTGRES_DB: docmaid
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d documind"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d docmaid"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -16,7 +16,7 @@ services:
   backend:
     build: ./backend
     environment:
-      DATABASE_URL: postgresql+psycopg2://postgres:${POSTGRES_PASSWORD:-postgres}@db:5432/documind
+      DATABASE_URL: postgresql+psycopg2://postgres:${POSTGRES_PASSWORD:-postgres}@db:5432/docmaid
       ENVIRONMENT: development
       # demo = canned responses, zero API calls, zero cost. Set to groq or
       # anthropic (with the matching key below) for real model answers.

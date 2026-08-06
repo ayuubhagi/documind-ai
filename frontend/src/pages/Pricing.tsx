@@ -58,7 +58,7 @@ export default function Pricing() {
     <div className="min-h-screen">
       <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
         <Link to="/" className="font-display text-2xl font-bold text-brand-400">
-          DocuMind <span className="text-xs uppercase tracking-widest text-slate-500">AI</span>
+          DocMaid <span className="text-xs uppercase tracking-widest text-slate-500">AI</span>
         </Link>
         <Link to={isAuthed ? "/dashboard" : "/login"} className="btn-secondary">
           {isAuthed ? "Open app" : "Sign in"}

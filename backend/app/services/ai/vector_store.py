@@ -28,7 +28,7 @@ class _HashEmbeddingFunction(EmbeddingFunction[Documents]):
     _DIM = 128
 
     def name(self) -> str:  # chroma>=0.5 identifies embedding functions by name
-        return "documind-hash-test"
+        return "docmaid-hash-test"
 
     def __call__(self, input: Documents) -> Embeddings:  # noqa: A002 — chroma API name
         import hashlib
