@@ -1,4 +1,4 @@
-# Deploying DocuMind AI
+# Deploying DocMaid AI
 
 Production architecture: a single VPS running Docker Compose, with **Caddy** terminating HTTPS (automatic Let's Encrypt certificates) in front of the frontend and backend containers. Postgres, uploaded files, and the vector index live in named Docker volumes.
 
@@ -20,12 +20,12 @@ curl -fsSL https://get.docker.com | sh
 
 ## 2. Point your domain at it
 
-Create a DNS **A record** for your domain (e.g. `documind.yourdomain.com`) pointing to the server's IP. Caddy needs this resolvable before it can issue a certificate.
+Create a DNS **A record** for your domain (e.g. `docmaid.yourdomain.com`) pointing to the server's IP. Caddy needs this resolvable before it can issue a certificate.
 
 ## 3. Configure and launch
 
 ```bash
-git clone https://github.com/<you>/documind.git && cd documind
+git clone https://github.com/<you>/docmaid.git && cd docmaid
 cp .env.example .env
 nano .env
 ```
@@ -33,7 +33,7 @@ nano .env
 Set in `.env`:
 
 ```env
-DOMAIN=documind.yourdomain.com
+DOMAIN=docmaid.yourdomain.com
 SECRET_KEY=<output of: python3 -c "import secrets; print(secrets.token_hex(32))">
 POSTGRES_PASSWORD=<long random password>
 
@@ -62,14 +62,14 @@ docker compose -f docker-compose.prod.yml up -d --build
 
 # Database backup
 docker compose -f docker-compose.prod.yml exec db \
-  pg_dump -U postgres documind > backup_$(date +%F).sql
+  pg_dump -U postgres docmaid > backup_$(date +%F).sql
 
 # Restore
 cat backup_2026-06-11.sql | docker compose -f docker-compose.prod.yml exec -T db \
-  psql -U postgres documind
+  psql -U postgres docmaid
 ```
 
-Uploaded files and the vector index live in the `uploads` and `chroma` volumes; back them up with `docker run --rm -v documind_uploads:/data -v $(pwd):/backup alpine tar czf /backup/uploads.tgz /data` (same pattern for `chroma`).
+Uploaded files and the vector index live in the `uploads` and `chroma` volumes; back them up with `docker run --rm -v docmaid_uploads:/data -v $(pwd):/backup alpine tar czf /backup/uploads.tgz /data` (same pattern for `chroma`).
 
 ## Security checklist
 
@@ -84,7 +84,7 @@ Uploaded files and the vector index live in the `uploads` and `chroma` volumes; 
 
 A zero-cost live demo, no credit card anywhere:
 
-1. **Backend on Render (free tier):** sign in at [render.com](https://render.com) with GitHub → **New → Blueprint** → select this repo. `render.yaml` provisions everything: demo LLM provider (no AI spend possible) and a generated `SECRET_KEY`. Set `DATABASE_URL` in the dashboard to a managed Postgres instance (free Neon tier works) so accounts, plans, and document chunks survive restarts; the Chroma vector index lives on ephemeral disk and is rebuilt lazily from stored chunks (`app/services/ai/reindex.py`). Note the service URL, e.g. `https://documind-backend.onrender.com`.
+1. **Backend on Render (free tier):** sign in at [render.com](https://render.com) with GitHub → **New → Blueprint** → select this repo. `render.yaml` provisions everything: demo LLM provider (no AI spend possible) and a generated `SECRET_KEY`. Set `DATABASE_URL` in the dashboard to a managed Postgres instance (free Neon tier works) so accounts, plans, and document chunks survive restarts; the Chroma vector index lives on ephemeral disk and is rebuilt lazily from stored chunks (`app/services/ai/reindex.py`). Note the service URL, e.g. `https://documind-ai-hazel-theta.onrender.com`.
 2. **Frontend on Vercel:** import the repo, set **Root Directory** to `frontend`, and add env var `VITE_API_URL=https://<your-render-url>`. Redeploy.
 3. If your Vercel domain differs from the one in `render.yaml`, update `CORS_ORIGINS` in the Render dashboard.
 

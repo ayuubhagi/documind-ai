@@ -1,6 +1,6 @@
-# DocuMind AI 📄✨
+# DocMaid AI 📄✨
 
-**Chat with your documents.** Upload PDFs, Word docs, or notes — DocuMind indexes them with a retrieval-augmented generation (RAG) pipeline and answers your questions in real time, with every claim cited back to the exact source passage.
+**Chat with your documents.** Upload PDFs, Word docs, or notes — DocMaid indexes them with a retrieval-augmented generation (RAG) pipeline and answers your questions in real time, with every claim cited back to the exact source passage.
 
 > Full-stack AI engineering project: React · FastAPI · PostgreSQL · ChromaDB · pluggable LLM backends (demo / Groq / Anthropic Claude) · Docker · GitHub Actions
 
@@ -12,7 +12,7 @@
 
 ## Why this exists
 
-Knowledge workers and students waste hours scanning long documents for specific answers. Ctrl+F finds words, not meaning. DocuMind solves this with semantic search + LLM generation: ask *"What are the termination conditions in this contract?"* and get a direct, cited answer in seconds.
+Knowledge workers and students waste hours scanning long documents for specific answers. Ctrl+F finds words, not meaning. DocMaid solves this with semantic search + LLM generation: ask *"What are the termination conditions in this contract?"* and get a direct, cited answer in seconds.
 
 ## Features
 
@@ -84,7 +84,7 @@ Want real model answers? Copy `.env.example` → `.env` and set either:
 cd backend
 python -m venv .venv && source .venv/bin/activate   # .venv\Scripts\activate on Windows
 pip install -r requirements-dev.txt
-export DATABASE_URL=postgresql+psycopg2://postgres:postgres@localhost:5432/documind
+export DATABASE_URL=postgresql+psycopg2://postgres:postgres@localhost:5432/docmaid
 alembic upgrade head                                  # create/upgrade the schema
 uvicorn app.main:app --reload                         # demo mode by default
 

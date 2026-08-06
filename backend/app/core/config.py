@@ -10,7 +10,7 @@ DEV_SECRET_KEY = "dev-secret-key-change-in-production"
 class Settings(BaseSettings):
     """Application settings loaded from environment variables (or a .env file)."""
 
-    PROJECT_NAME: str = "DocuMind AI"
+    PROJECT_NAME: str = "DocMaid AI"
     API_PREFIX: str = "/api"
 
     # "development" or "production". Production enforces a real SECRET_KEY.
@@ -39,7 +39,7 @@ class Settings(BaseSettings):
     PRO_DOCUMENT_LIMIT: int = 50
 
     # Database
-    DATABASE_URL: str = "postgresql+psycopg2://postgres:postgres@localhost:5432/documind"
+    DATABASE_URL: str = "postgresql+psycopg2://postgres:postgres@localhost:5432/docmaid"
 
     # AI provider: "demo" (no API, canned responses), "groq" (free tier), or "anthropic".
     # Demo is the default so the project runs with zero API keys and zero cost.

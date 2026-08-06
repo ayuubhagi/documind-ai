@@ -75,7 +75,7 @@ def create_checkout_session(
                         "unit_amount": settings.PRO_PRICE_CENTS,
                         "recurring": {"interval": "month"},
                         "product_data": {
-                            "name": "DocuMind Pro",
+                            "name": "DocMaid Pro",
                             "description": "Unlimited questions, 50 documents, priority speed",
                         },
                     },

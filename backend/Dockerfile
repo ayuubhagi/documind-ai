@@ -1,4 +1,4 @@
-# ---- DocuMind AI backend ----
+# ---- DocMaid AI backend ----
 FROM python:3.11-slim
 
 WORKDIR /app
